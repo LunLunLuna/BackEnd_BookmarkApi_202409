@@ -2,6 +2,8 @@ package com.bookmarker.api.service;
 
 import com.bookmarker.api.domain.Bookmark;
 import com.bookmarker.api.domain.BookmarkRepository;
+import com.bookmarker.api.dto.BookmarkDTO;
+import com.bookmarker.api.dto.BookmarkMapper;
 import com.bookmarker.api.dto.BookmarksDTO;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -18,13 +20,29 @@ import java.util.List;
 @RequiredArgsConstructor
 public class BookmarkService {
     private final BookmarkRepository repository;
+    private final BookmarkMapper mapper;
 
     @Transactional(readOnly = true)
-//    public List<Bookmark> getBookmarks(Integer page) {
-    public BookmarksDTO getBookmarks(Integer page) {
+    public BookmarksDTO<?> getBookmarks(Integer page) {
         int pageNo = page < 1 ? 0 : page - 1;
         Pageable pageable = PageRequest.of(pageNo, 10, Sort.Direction.DESC, "id");
-        Page<Bookmark> bookmarkPage = repository.findAll(pageable);
-        return new BookmarksDTO(bookmarkPage);
+        //return repository.findAll(pageable).getContent();
+        //Page<Bookmark> bookmarkPage = repository.findAll(pageable);
+        //Page<Bookmark> ==> Page<BookmarkDTO>
+        //Page<BookmarkDTO> bookmarkPage = repository.findAll(pageable)
+        //.map(bookmark -> mapper.toDTO(bookmark));  //Lambda Expression
+        //.map(mapper::toDTO);  //Method Reference
+        Page<BookmarkDTO> bookmarkPage = repository.findBookmarks(pageable);
+        return new BookmarksDTO<>(bookmarkPage);
     }
+
+    @Transactional(readOnly = true)
+    public BookmarksDTO<?> searchBookmarks(String query, Integer page) {
+        int pageNo = page < 1 ? 0 : page - 1 ;
+        Pageable pageable = PageRequest.of(pageNo, 10, Sort.Direction.DESC, "id");
+        //Page<BookmarkDTO> bookmarkPage = repository.searchBookmarks(query, pageable);
+        Page<BookmarkDTO> bookmarkPage = repository.findByTitleContainsIgnoreCase(query, pageable);
+        return new BookmarksDTO<>(bookmarkPage);
+    }
+
 }
